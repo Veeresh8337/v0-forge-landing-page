@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 export function Footer() {
   return (
     <footer className="bg-[#0D0D0D] border-t-2 border-[#8A8A8A] py-12 sm:py-16">
@@ -17,10 +19,10 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-sans font-medium text-[#F5F4F0] mb-4 uppercase tracking-wide">For Clients</h4>
             <ul className="space-y-3">
-              <li><a href="#" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Browse Talent</a></li>
-              <li><a href="#" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Post Project</a></li>
-              <li><a href="#" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Pricing</a></li>
-              <li><a href="#" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">How It Works</a></li>
+              <li><Link href="/talent" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Browse Talent</Link></li>
+              <li><Link href="/auth/login" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Post Project</Link></li>
+              <li><Link href="#pricing" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Pricing</Link></li>
+              <li><Link href="#how" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">How It Works</Link></li>
             </ul>
           </div>
 
@@ -28,10 +30,10 @@ export function Footer() {
           <div>
             <h4 className="text-sm font-sans font-medium text-[#F5F4F0] mb-4 uppercase tracking-wide">For Developers</h4>
             <ul className="space-y-3">
-              <li><a href="#" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Find Work</a></li>
-              <li><a href="#" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Apply Now</a></li>
-              <li><a href="#" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Build Profile</a></li>
-              <li><a href="#" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Resources</a></li>
+              <li><Link href="/projects" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Find Work</Link></li>
+              <li><Link href="/auth/login" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Apply Now</Link></li>
+              <li><Link href="/auth/login" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Build Profile</Link></li>
+              <li><Link href="#resources" className="text-sm font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors">Resources</Link></li>
             </ul>
           </div>
 

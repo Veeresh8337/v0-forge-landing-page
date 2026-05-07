@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 export function AIScopingSection() {
   return (
     <section className="bg-white py-16 sm:py-24">
@@ -79,9 +81,9 @@ export function AIScopingSection() {
               </div>
             </div>
             
-            <button className="px-6 sm:px-8 py-3 bg-[#F5A623] text-[#0D0D0D] font-sans text-sm sm:text-base font-medium border-2 border-[#F5A623] hover:bg-[#0D0D0D] hover:text-[#F5A623] transition-all duration-200 w-full sm:w-auto">
+            <Link href="/post-project" className="inline-block px-6 sm:px-8 py-3 bg-[#F5A623] text-[#0D0D0D] font-sans text-sm sm:text-base font-medium border-2 border-[#F5A623] hover:bg-[#0D0D0D] hover:text-[#F5A623] transition-all duration-200 w-full sm:w-auto text-center">
               Try Smart Scoping
-            </button>
+            </Link>
           </div>
         </div>
       </div>

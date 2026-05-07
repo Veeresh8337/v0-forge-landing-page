@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { StepItem } from './step-item';
 
 export function HowItWorks() {
@@ -34,9 +35,9 @@ export function HowItWorks() {
         </div>
 
         <div className="mt-12 sm:mt-16 text-center">
-          <button className="px-6 sm:px-8 py-3 bg-[#F5A623] text-[#0D0D0D] font-sans text-sm sm:text-base font-medium border-2 border-[#F5A623] hover:bg-[#0D0D0D] hover:text-[#F5A623] transition-all duration-200">
+          <Link href="/post-project" className="inline-block px-6 sm:px-8 py-3 bg-[#F5A623] text-[#0D0D0D] font-sans text-sm sm:text-base font-medium border-2 border-[#F5A623] hover:bg-[#0D0D0D] hover:text-[#F5A623] transition-all duration-200">
             Post Your First Project
-          </button>
+          </Link>
         </div>
       </div>
     </section>

@@ -1,59 +1,80 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { TalentCard } from './talent-card'
 
 type Talent = {
   id: string
-  name: string
-  role: string
-  skills: string[]
-  github: string
-  stars: number
+  full_name?: string
+  role?: string
+  skills?: string[]
+  github_url?: string
   avatar_url?: string
 }
+
+const CATEGORIES = ['All', 'Web Dev', 'AI / ML', 'Mobile', 'Backend']
 
 // Fallback static data shown while DB is empty / loading
 const FALLBACK_TALENTS: Talent[] = [
   {
     id: '1',
-    name: 'Alex Chen',
+    full_name: 'Alex Chen',
     role: 'Full Stack Developer',
     skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'],
-    github: 'https://github.com/alexchen',
-    stars: 842,
+    github_url: 'https://github.com/alexchen',
   },
   {
     id: '2',
-    name: 'Jamie Rodriguez',
+    full_name: 'Jamie Rodriguez',
     role: 'Backend Engineer',
     skills: ['Go', 'Rust', 'Kubernetes', 'AWS'],
-    github: 'https://github.com/jamierodriguez',
-    stars: 1204,
+    github_url: 'https://github.com/jamierodriguez',
   },
   {
     id: '3',
-    name: 'Sam Patel',
+    full_name: 'Sam Patel',
     role: 'Frontend Specialist',
     skills: ['React', 'Next.js', 'Tailwind', 'Framer Motion'],
-    github: 'https://github.com/sampatel',
-    stars: 567,
+    github_url: 'https://github.com/sampatel',
   },
+  {
+    id: '4',
+    full_name: 'Elena Rostova',
+    role: 'Machine Learning',
+    skills: ['Python', 'PyTorch', 'TensorFlow', 'CUDA'],
+    github_url: 'https://github.com/erostova',
+  },
+  {
+    id: '5',
+    full_name: 'Marcus Johnson',
+    role: 'Mobile Developer',
+    skills: ['Swift', 'Kotlin', 'React Native', 'Firebase'],
+    github_url: 'https://github.com/marcusj',
+  },
+  {
+    id: '6',
+    full_name: 'Sarah Lee',
+    role: 'Web Developer',
+    skills: ['Vue.js', 'Nuxt', 'CSS', 'Figma'],
+    github_url: 'https://github.com/sarahlee',
+  }
 ]
 
 export function TalentCardGrid() {
   const [talents, setTalents] = useState<Talent[]>(FALLBACK_TALENTS)
   const [live, setLive] = useState(false)
   const [newEntry, setNewEntry] = useState<string | null>(null)
+  const [activeCategory, setActiveCategory] = useState('All')
 
   const fetchTalents = useCallback(async () => {
     const supabase = createClient()
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, name, role, skills, github, stars, avatar_url')
-      .order('stars', { ascending: false })
-      .limit(6)
+      .select('id, full_name, role, skills, github_url, avatar_url')
+      .order('created_at', { ascending: false })
+      .limit(20)
 
     if (!error && data && data.length > 0) {
       setTalents(data as Talent[])
@@ -66,7 +87,6 @@ export function TalentCardGrid() {
 
     const supabase = createClient()
 
-    // Real-time subscription on the `profiles` table
     const channel = supabase
       .channel('realtime:profiles')
       .on(
@@ -75,9 +95,9 @@ export function TalentCardGrid() {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newProfile = payload.new as Talent
-            setNewEntry(newProfile.name)
+            setNewEntry(newProfile.full_name || 'Anonymous')
             setTimeout(() => setNewEntry(null), 3000)
-            setTalents((prev) => [newProfile, ...prev].slice(0, 6))
+            setTalents((prev) => [newProfile, ...prev])
             setLive(true)
           } else if (payload.eventType === 'UPDATE') {
             setTalents((prev) =>
@@ -95,20 +115,32 @@ export function TalentCardGrid() {
     }
   }, [fetchTalents])
 
+  // Simple client-side filtering based on role/skills for demonstration
+  const filteredTalents = talents.filter((talent) => {
+    if (activeCategory === 'All') return true
+    const searchString = `${talent.role || ''} ${(talent.skills || []).join(' ')}`.toLowerCase()
+    
+    if (activeCategory === 'Web Dev') return searchString.includes('web') || searchString.includes('frontend') || searchString.includes('react')
+    if (activeCategory === 'AI / ML') return searchString.includes('machine learning') || searchString.includes('ai') || searchString.includes('python')
+    if (activeCategory === 'Mobile') return searchString.includes('mobile') || searchString.includes('swift') || searchString.includes('react native')
+    if (activeCategory === 'Backend') return searchString.includes('backend') || searchString.includes('node') || searchString.includes('go') || searchString.includes('rust')
+    
+    return true
+  }).slice(0, 6)
+
   return (
     <section id="talent" className="bg-white py-16 sm:py-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="mb-12 sm:mb-16 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-medium text-[#0D0D0D] mb-4 sm:mb-6 text-balance">
-              Top Developers on Forge
+              Hire Top Freelancers
             </h2>
             <p className="text-base sm:text-lg font-sans text-[#8A8A8A] max-w-2xl">
               Browse from a curated selection of the best student developers. Every profile is verified and rated by real clients.
             </p>
           </div>
 
-          {/* Live badge */}
           <div className="flex items-center gap-2 shrink-0">
             <span className={`w-2 h-2 rounded-full ${live ? 'bg-green-500 animate-pulse' : 'bg-[#8A8A8A]'}`} />
             <span className="text-xs font-sans text-[#8A8A8A]">
@@ -117,7 +149,23 @@ export function TalentCardGrid() {
           </div>
         </div>
 
-        {/* Toast for new entrant */}
+        {/* Category Tabs */}
+        <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-10 pb-2 border-b-2 border-[#F5F4F0]">
+          {CATEGORIES.map(category => (
+            <button
+              key={category}
+              onClick={() => setActiveCategory(category)}
+              className={`px-5 py-2.5 text-sm font-sans font-medium whitespace-nowrap transition-colors ${
+                activeCategory === category 
+                  ? 'bg-[#0D0D0D] text-white' 
+                  : 'bg-[#F5F4F0] text-[#8A8A8A] hover:bg-[#EBEBEB] hover:text-[#0D0D0D]'
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
         {newEntry && (
           <div className="mb-6 px-4 py-3 border-2 border-[#F5A623] bg-[#FFF8EC] flex items-center gap-3 animate-fade-up">
             <span className="w-2 h-2 rounded-full bg-[#F5A623]" />
@@ -127,16 +175,29 @@ export function TalentCardGrid() {
           </div>
         )}
 
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-          {talents.map((talent) => (
-            <TalentCard key={talent.id} {...talent} />
-          ))}
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 min-h-[400px]">
+          {filteredTalents.length > 0 ? (
+            filteredTalents.map((talent) => (
+              <TalentCard 
+                key={talent.id} 
+                name={talent.full_name || 'Anonymous'}
+                role={talent.role || 'Developer'}
+                skills={talent.skills || []}
+                github={talent.github_url || ''}
+                stars={Math.floor(Math.random() * 1000)}
+              />
+            ))
+          ) : (
+            <div className="col-span-full flex flex-col items-center justify-center py-20 border-2 border-dashed border-[#8A8A8A]">
+              <p className="text-[#8A8A8A] font-sans text-sm">No freelancers found in this category yet.</p>
+            </div>
+          )}
         </div>
 
         <div className="mt-12 sm:mt-16 text-center">
-          <button className="px-6 sm:px-8 py-3 border-2 border-[#0D0D0D] text-[#0D0D0D] font-sans text-sm sm:text-base font-medium hover:border-[#F5A623] hover:text-[#F5A623] transition-all duration-200">
+          <Link href="/talent" className="inline-block px-6 sm:px-8 py-3 border-2 border-[#0D0D0D] text-[#0D0D0D] font-sans text-sm sm:text-base font-medium hover:border-[#F5A623] hover:text-[#F5A623] transition-all duration-200">
             View All Developers
-          </button>
+          </Link>
         </div>
       </div>
     </section>

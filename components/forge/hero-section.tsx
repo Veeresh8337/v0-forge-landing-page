@@ -25,16 +25,16 @@ export function HeroSection() {
             
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 animate-fade-up-delay-2">
               <Link
-                href="/auth/login"
+                href="/post-project"
                 className="px-6 sm:px-8 py-3 bg-[#F5A623] text-[#0D0D0D] font-sans text-sm sm:text-base font-medium border-2 border-[#F5A623] hover:bg-[#0D0D0D] hover:text-[#F5A623] transition-all duration-200 text-center"
               >
-                Browse Projects
+                Post a Project
               </Link>
               <Link
-                href="#talent"
+                href="/talent"
                 className="px-6 sm:px-8 py-3 border-2 border-[#0D0D0D] text-[#0D0D0D] font-sans text-sm sm:text-base font-medium hover:border-[#F5A623] hover:text-[#F5A623] transition-all duration-200 text-center"
               >
-                View Talent
+                Hire Freelancers
               </Link>
             </div>
           </div>

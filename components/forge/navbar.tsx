@@ -69,29 +69,41 @@ export function Navbar() {
           {loading ? (
             <div className="w-24 h-8 bg-[#F5F4F0] animate-pulse" />
           ) : user ? (
-            <div className="flex items-center gap-3">
-              {/* Avatar */}
-              {user.user_metadata?.avatar_url ? (
-                <img
-                  src={user.user_metadata.avatar_url}
-                  alt={user.user_metadata?.full_name ?? 'User'}
-                  className="w-8 h-8 rounded-full border-2 border-[#8A8A8A] object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-[#F5A623] border-2 border-[#8A8A8A] flex items-center justify-center text-xs font-sans font-medium text-[#0D0D0D]">
-                  {initials}
-                </div>
-              )}
-              <span className="text-xs font-sans text-[#0D0D0D] hidden sm:inline max-w-[100px] truncate">
-                {user.user_metadata?.full_name ?? user.email}
-              </span>
-              <button
-                onClick={handleSignOut}
-                disabled={signingOut}
-                className="text-xs font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors disabled:opacity-50"
-              >
-                {signingOut ? 'Signing out…' : 'Sign Out'}
-              </button>
+            <div className="flex items-center gap-4">
+              {/* Logged-in Quick Actions */}
+              <div className="hidden md:flex items-center gap-4 mr-2 border-r-2 border-[#8A8A8A] pr-4">
+                <Link href="/projects" className="text-xs font-sans font-medium text-[#0D0D0D] hover:text-[#F5A623] transition-colors">
+                  Job Board
+                </Link>
+                <Link href="/post-project" className="px-4 py-2 bg-[#F5A623] text-[#0D0D0D] font-sans text-xs font-medium border-2 border-[#F5A623] hover:bg-[#0D0D0D] hover:text-[#F5A623] transition-all duration-200">
+                  Post Project
+                </Link>
+              </div>
+
+              {/* Avatar & Sign Out */}
+              <div className="flex items-center gap-3">
+                {user.user_metadata?.avatar_url ? (
+                  <img
+                    src={user.user_metadata.avatar_url}
+                    alt={user.user_metadata?.full_name ?? 'User'}
+                    className="w-8 h-8 rounded-full border-2 border-[#8A8A8A] object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-[#F5A623] border-2 border-[#8A8A8A] flex items-center justify-center text-xs font-sans font-medium text-[#0D0D0D]">
+                    {initials}
+                  </div>
+                )}
+                <span className="text-xs font-sans text-[#0D0D0D] hidden sm:inline max-w-[100px] truncate">
+                  {user.user_metadata?.full_name ?? user.email}
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  className="text-xs font-sans text-[#8A8A8A] hover:text-[#F5A623] transition-colors disabled:opacity-50"
+                >
+                  {signingOut ? 'Sign out' : 'Sign Out'}
+                </button>
+              </div>
             </div>
           ) : (
             <>
