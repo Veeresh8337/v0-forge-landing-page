@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Briefcase, Users, Star, Clock, Plus, ChevronRight,
   TrendingUp, CheckCircle2, AlertCircle, Loader2,
-  Bookmark, Eye, Filter, Search, DollarSign
+  Eye, DollarSign, MessageCircle, Send, Search
 } from 'lucide-react'
 
 type Project = {
@@ -39,11 +39,18 @@ export default function ClientDashboard() {
   const router = useRouter()
   const supabase = createClient()
 
+  const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'open' | 'in_progress' | 'completed'>('all')
   const [search, setSearch] = useState('')
+
+  // Chat state keyed by project_id
+  const [chatMessages, setChatMessages] = useState<Record<string, any[]>>({})
+  const [chatInputs, setChatInputs] = useState<Record<string, string>>({})
+  const [openChat, setOpenChat] = useState<string | null>(null)
+  const chatEndRef = useRef<HTMLDivElement>(null)
 
   const stats = {
     total: projects.length,
@@ -56,6 +63,7 @@ export default function ClientDashboard() {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/auth/login'); return }
+      setUser(user)
 
       const [profileRes, projectsRes] = await Promise.all([
         supabase.from('profiles').select('full_name, avatar_url, role').eq('id', user.id).single(),
@@ -68,14 +76,65 @@ export default function ClientDashboard() {
       }
 
       setProfile(profileRes.data)
-      setProjects((projectsRes.data || []).map((p: any) => ({
+      const projData = (projectsRes.data || []).map((p: any) => ({
         ...p,
         bid_count: p.bids?.[0]?.count ?? 0
-      })))
+      }))
+      setProjects(projData)
+
+      // Load chat for in-progress projects
+      const activeProjIds = projData
+        .filter((p: any) => p.status === 'in_progress')
+        .map((p: any) => p.id)
+
+      if (activeProjIds.length > 0) {
+        const messagesMap: Record<string, any[]> = {}
+        await Promise.all(activeProjIds.map(async (pid: string) => {
+          const { data } = await supabase
+            .from('project_messages')
+            .select('*, sender:profiles!sender_id(full_name, avatar_url)')
+            .eq('project_id', pid)
+            .order('created_at', { ascending: true })
+          messagesMap[pid] = data || []
+        }))
+        setChatMessages(messagesMap)
+
+        activeProjIds.forEach((pid: string) => {
+          supabase.channel(`client_chat_${pid}`)
+            .on('postgres_changes', {
+              event: 'INSERT', schema: 'public', table: 'project_messages',
+              filter: `project_id=eq.${pid}`
+            }, async (payload) => {
+              const { data: newMsg } = await supabase
+                .from('project_messages')
+                .select('*, sender:profiles!sender_id(full_name, avatar_url)')
+                .eq('id', payload.new.id)
+                .single()
+              if (newMsg) {
+                setChatMessages(prev => ({
+                  ...prev,
+                  [pid]: [...(prev[pid] || []), newMsg]
+                }))
+              }
+            }).subscribe()
+        })
+      }
+
       setLoading(false)
     }
     load()
   }, [])
+
+  const sendMessage = async (projectId: string) => {
+    const content = (chatInputs[projectId] || '').trim()
+    if (!content || !user) return
+    setChatInputs(prev => ({ ...prev, [projectId]: '' }))
+    await supabase.from('project_messages').insert({
+      project_id: projectId,
+      sender_id: user.id,
+      content
+    })
+  }
 
   const filtered = projects.filter(p => {
     const matchStatus = filter === 'all' || p.status === filter
@@ -207,13 +266,26 @@ export default function ClientDashboard() {
                         <Eye size={12} /> View Bids
                       </Link>
                       {project.status === 'in_progress' && (
-                        <Link
-                          href={`/projects/${project.id}/dashboard`}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-[#F5A623] text-[#0D0D0D] text-xs font-mono font-medium hover:bg-[#E09510] transition-colors"
-                        >
-                          <ChevronRight size={12} /> Dashboard
-                        </Link>
-                      )}
+                          <>
+                            <Link
+                              href={`/projects/${project.id}/dashboard`}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-[#F5A623] text-[#0D0D0D] text-xs font-mono font-medium hover:bg-[#E09510] transition-colors"
+                            >
+                              <ChevronRight size={12} /> Dashboard
+                            </Link>
+                            <button
+                              onClick={() => setOpenChat(openChat === project.id ? null : project.id)}
+                              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-mono border transition-colors ${
+                                openChat === project.id ? 'border-[#F5A623] text-[#F5A623] bg-[#F5A623]/10' : 'border-[#27272a] text-[#a1a1aa] hover:border-[#F5A623] hover:text-[#F5A623]'
+                              }`}
+                            >
+                              <MessageCircle size={12} /> Chat
+                              {(chatMessages[project.id]?.length || 0) > 0 && (
+                                <span className="ml-1 text-[9px] bg-[#F5A623] text-[#09090b] px-1 rounded-full">{chatMessages[project.id].length}</span>
+                              )}
+                            </button>
+                          </>
+                        )}
                     </div>
                   </div>
 
@@ -222,6 +294,55 @@ export default function ClientDashboard() {
                       {project.tech_stack.slice(0, 5).map(t => (
                         <span key={t} className="text-xs font-mono px-2 py-0.5 bg-[#09090b] border border-[#27272a] text-[#a1a1aa]">{t}</span>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Inline Chat for In-Progress projects */}
+                  {project.status === 'in_progress' && openChat === project.id && (
+                    <div className="mt-4 border border-[#27272a] overflow-hidden">
+                      <div className="px-4 py-2 bg-[#1c1c1f] border-b border-[#27272a]">
+                        <p className="text-[10px] font-mono text-[#a1a1aa] uppercase tracking-widest">💬 Chat with Freelancer</p>
+                      </div>
+                      <div className="h-52 overflow-y-auto p-3 space-y-3 bg-[#09090b]">
+                        {(chatMessages[project.id] || []).length === 0 ? (
+                          <p className="text-[10px] font-mono text-[#52525b] text-center mt-8 uppercase tracking-widest">No messages yet. Start the conversation.</p>
+                        ) : (
+                          (chatMessages[project.id] || []).map((msg: any) => {
+                            const isMe = msg.sender_id === user?.id
+                            return (
+                              <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                <div className={`max-w-[80%] px-3 py-2 text-xs font-mono ${
+                                  isMe ? 'bg-[#27272a] text-[#fafafa]' : 'bg-[#18181b] border border-[#27272a] text-[#a1a1aa]'
+                                }`}>
+                                  {msg.content}
+                                </div>
+                                <span className="text-[9px] font-mono text-[#52525b] mt-0.5">
+                                  {isMe ? 'You' : msg.sender?.full_name} · {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            )
+                          })
+                        )}
+                        <div ref={chatEndRef} />
+                      </div>
+                      <form
+                        onSubmit={(e) => { e.preventDefault(); sendMessage(project.id) }}
+                        className="flex border-t border-[#27272a]"
+                      >
+                        <input
+                          type="text"
+                          value={chatInputs[project.id] || ''}
+                          onChange={(e) => setChatInputs(prev => ({ ...prev, [project.id]: e.target.value }))}
+                          placeholder="Message freelancer..."
+                          className="flex-1 bg-[#18181b] px-4 py-3 text-sm font-mono text-[#fafafa] placeholder-[#52525b] outline-none border-none"
+                        />
+                        <button
+                          type="submit"
+                          className="px-4 py-3 bg-[#F5A623] text-[#09090b] hover:bg-[#E09510] transition-colors"
+                        >
+                          <Send size={14} />
+                        </button>
+                      </form>
                     </div>
                   )}
                 </div>

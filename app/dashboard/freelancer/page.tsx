@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Briefcase, Star, Clock, ChevronRight, Loader2,
-  CheckCircle2, AlertCircle, TrendingUp, Code2,
-  Github, User, FileText, ArrowRight, Zap
+  CheckCircle2, AlertCircle, TrendingUp,
+  Github, User, ArrowRight, Zap, MessageCircle, Send
 } from 'lucide-react'
 
 type Bid = {
@@ -51,25 +51,25 @@ type Profile = {
 
 const BID_STATUS = {
   pending: { label: 'Awaiting Response', color: '#F5A623', bg: 'rgba(245,166,35,0.1)' },
-  accepted: { label: 'Accepted ✓', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
+  accepted: { label: '✓ Accepted', color: '#22c55e', bg: 'rgba(34,197,94,0.1)' },
   rejected: { label: 'Declined', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-}
-
-const PROJECT_STATUS = {
-  open: 'Open',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-  cancelled: 'Cancelled',
 }
 
 export default function FreelancerDashboard() {
   const router = useRouter()
   const supabase = createClient()
 
+  const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [bids, setBids] = useState<Bid[]>([])
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Chat state: keyed by project_id
+  const [chatMessages, setChatMessages] = useState<Record<string, any[]>>({})
+  const [chatInputs, setChatInputs] = useState<Record<string, string>>({})
+  const [openChat, setOpenChat] = useState<string | null>(null)
+  const chatEndRef = useRef<HTMLDivElement>(null)
 
   const stats = {
     totalBids: bids.length,
@@ -86,6 +86,7 @@ export default function FreelancerDashboard() {
           router.push('/auth/login')
           return 
         }
+        setUser(authData.user)
 
         const [profileRes, bidsRes, reviewsRes] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', authData.user.id).single(),
@@ -99,17 +100,69 @@ export default function FreelancerDashboard() {
         }
 
         setProfile(profileRes.data)
-        setBids(bidsRes.data || [])
+        const bidsData = bidsRes.data || []
+        setBids(bidsData)
         setReviews(reviewsRes.data || [])
+
+        // Load messages for all active jobs
+        const activeProjIds = bidsData
+          .filter((b: any) => b.status === 'accepted' && b.projects?.status === 'in_progress')
+          .map((b: any) => b.projects?.id)
+          .filter(Boolean)
+
+        if (activeProjIds.length > 0) {
+          const messagesMap: Record<string, any[]> = {}
+          await Promise.all(activeProjIds.map(async (pid: string) => {
+            const { data } = await supabase
+              .from('project_messages')
+              .select('*, sender:profiles!sender_id(full_name, avatar_url)')
+              .eq('project_id', pid)
+              .order('created_at', { ascending: true })
+            messagesMap[pid] = data || []
+          }))
+          setChatMessages(messagesMap)
+
+          // Subscribe to realtime for all active projects
+          activeProjIds.forEach((pid: string) => {
+            supabase.channel(`dash_chat_${pid}`)
+              .on('postgres_changes', {
+                event: 'INSERT', schema: 'public', table: 'project_messages',
+                filter: `project_id=eq.${pid}`
+              }, async (payload) => {
+                const { data: newMsg } = await supabase
+                  .from('project_messages')
+                  .select('*, sender:profiles!sender_id(full_name, avatar_url)')
+                  .eq('id', payload.new.id)
+                  .single()
+                if (newMsg) {
+                  setChatMessages(prev => ({
+                    ...prev,
+                    [pid]: [...(prev[pid] || []), newMsg]
+                  }))
+                }
+              }).subscribe()
+          })
+        }
       } catch (err) {
         console.error("Dashboard Load Error:", err)
-        alert("Connection failed. Please check if your Supabase project is active/not paused.")
+        alert("Connection failed. Check if your Supabase project is active.")
       } finally {
         setLoading(false)
       }
     }
     load()
   }, [])
+
+  const sendMessage = async (projectId: string) => {
+    const content = (chatInputs[projectId] || '').trim()
+    if (!content || !user) return
+    setChatInputs(prev => ({ ...prev, [projectId]: '' }))
+    await supabase.from('project_messages').insert({
+      project_id: projectId,
+      sender_id: user.id,
+      content
+    })
+  }
 
   if (loading) return (
     <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
@@ -225,29 +278,96 @@ export default function FreelancerDashboard() {
               </h1>
             </div>
 
-            {/* Active Jobs */}
+            {/* Active Jobs with Inline Chat */}
             {activeBids.length > 0 && (
               <section>
                 <h2 className="text-sm font-mono text-[#a1a1aa] uppercase tracking-widest mb-3 flex items-center gap-2">
                   <Zap size={12} className="text-[#22c55e]" /> Active Jobs ({activeBids.length})
                 </h2>
-                <div className="space-y-3">
-                  {activeBids.map(bid => (
-                    <div key={bid.id} className="bg-[#18181b] border border-[#22c55e]/30 p-5">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className="font-serif font-medium text-[#fafafa] mb-1">{bid.projects?.title}</h3>
-                          <p className="text-xs font-mono text-[#71717a] line-clamp-2">{bid.projects?.description}</p>
+                <div className="space-y-4">
+                  {activeBids.map(bid => {
+                    const pid = bid.projects?.id
+                    const msgs = chatMessages[pid] || []
+                    const isOpen = openChat === pid
+                    return (
+                      <div key={bid.id} className="bg-[#18181b] border border-[#22c55e]/40 overflow-hidden">
+                        {/* Project Header */}
+                        <div className="p-5 flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[10px] font-mono px-2 py-0.5 bg-[#22c55e]/10 text-[#22c55e] border border-[#22c55e]/30">✓ ACCEPTED</span>
+                            </div>
+                            <h3 className="font-serif font-medium text-[#fafafa] text-lg mb-1">{bid.projects?.title}</h3>
+                            <p className="text-xs font-mono text-[#71717a] line-clamp-1">{bid.projects?.description}</p>
+                            <p className="text-xs font-mono text-[#52525b] mt-2">Your Bid: <span className="text-[#fafafa]">{bid.proposed_budget}</span></p>
+                          </div>
+                          <div className="flex flex-col gap-2 shrink-0">
+                            <Link
+                              href={`/projects/${pid}/dashboard`}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-[#22c55e] text-[#09090b] text-xs font-mono font-bold hover:bg-[#16a34a] transition-colors"
+                            >
+                              <ChevronRight size={12} /> Workspace
+                            </Link>
+                            <button
+                              onClick={() => setOpenChat(isOpen ? null : pid)}
+                              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-mono border transition-colors ${
+                                isOpen ? 'border-[#F5A623] text-[#F5A623] bg-[#F5A623]/10' : 'border-[#27272a] text-[#a1a1aa] hover:border-[#F5A623] hover:text-[#F5A623]'
+                              }`}
+                            >
+                              <MessageCircle size={12} />
+                              Chat {msgs.length > 0 && `(${msgs.length})`}
+                            </button>
+                          </div>
                         </div>
-                        <Link
-                          href={`/projects/${bid.projects?.id}/dashboard`}
-                          className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-[#22c55e] text-[#09090b] text-xs font-mono font-medium hover:bg-[#16a34a] transition-colors"
-                        >
-                          <ChevronRight size={12} /> Dashboard
-                        </Link>
+
+                        {/* Inline Chat Panel */}
+                        {isOpen && (
+                          <div className="border-t border-[#27272a]">
+                            <div className="h-64 overflow-y-auto p-4 space-y-3 bg-[#09090b]">
+                              {msgs.length === 0 ? (
+                                <p className="text-[10px] font-mono text-[#52525b] text-center mt-8 uppercase tracking-widest">No messages yet. Say hi!</p>
+                              ) : (
+                                msgs.map((msg: any) => {
+                                  const isMe = msg.sender_id === user?.id
+                                  return (
+                                    <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                                      <div className={`max-w-[80%] px-3 py-2 text-xs font-mono ${
+                                        isMe ? 'bg-[#27272a] text-[#fafafa]' : 'bg-[#18181b] border border-[#27272a] text-[#a1a1aa]'
+                                      }`}>
+                                        {msg.content}
+                                      </div>
+                                      <span className="text-[9px] font-mono text-[#52525b] mt-0.5">
+                                        {isMe ? 'You' : msg.sender?.full_name} · {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                  )
+                                })
+                              )}
+                              <div ref={chatEndRef} />
+                            </div>
+                            <form
+                              onSubmit={(e) => { e.preventDefault(); sendMessage(pid) }}
+                              className="flex gap-0 border-t border-[#27272a]"
+                            >
+                              <input
+                                type="text"
+                                value={chatInputs[pid] || ''}
+                                onChange={(e) => setChatInputs(prev => ({ ...prev, [pid]: e.target.value }))}
+                                placeholder="Message client..."
+                                className="flex-1 bg-[#18181b] px-4 py-3 text-sm font-mono text-[#fafafa] placeholder-[#52525b] outline-none border-none"
+                              />
+                              <button
+                                type="submit"
+                                className="px-4 py-3 bg-[#F5A623] text-[#09090b] hover:bg-[#E09510] transition-colors"
+                              >
+                                <Send size={14} />
+                              </button>
+                            </form>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </section>
             )}
