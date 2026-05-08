@@ -9,52 +9,53 @@ type Talent = {
   id: string
   full_name?: string
   role?: string
+  title?: string
   skills?: string[]
   github_url?: string
   avatar_url?: string
 }
 
-const CATEGORIES = ['All', 'Web Dev', 'AI / ML', 'Mobile', 'Backend']
+const TECH_CATEGORIES = ['Web Dev', 'AI / ML', 'Mobile', 'Backend', 'CyberSec', 'DevOps']
+const NON_TECH_CATEGORIES = ['Design', 'Video Editing', 'Data Entry', 'Writing', 'Marketing', 'Virtual Assistant', 'Audio / Music']
 
-// Fallback static data shown while DB is empty / loading
 const FALLBACK_TALENTS: Talent[] = [
   {
-    id: '1',
+    id: '00000000-0000-0000-0000-000000000001',
     full_name: 'Alex Chen',
     role: 'Full Stack Developer',
     skills: ['React', 'Node.js', 'TypeScript', 'PostgreSQL'],
     github_url: 'https://github.com/alexchen',
   },
   {
-    id: '2',
+    id: '00000000-0000-0000-0000-000000000002',
     full_name: 'Jamie Rodriguez',
     role: 'Backend Engineer',
     skills: ['Go', 'Rust', 'Kubernetes', 'AWS'],
     github_url: 'https://github.com/jamierodriguez',
   },
   {
-    id: '3',
+    id: '00000000-0000-0000-0000-000000000003',
     full_name: 'Sam Patel',
     role: 'Frontend Specialist',
     skills: ['React', 'Next.js', 'Tailwind', 'Framer Motion'],
     github_url: 'https://github.com/sampatel',
   },
   {
-    id: '4',
+    id: '00000000-0000-0000-0000-000000000004',
     full_name: 'Elena Rostova',
     role: 'Machine Learning',
     skills: ['Python', 'PyTorch', 'TensorFlow', 'CUDA'],
     github_url: 'https://github.com/erostova',
   },
   {
-    id: '5',
+    id: '00000000-0000-0000-0000-000000000005',
     full_name: 'Marcus Johnson',
     role: 'Mobile Developer',
     skills: ['Swift', 'Kotlin', 'React Native', 'Firebase'],
     github_url: 'https://github.com/marcusj',
   },
   {
-    id: '6',
+    id: '00000000-0000-0000-0000-000000000006',
     full_name: 'Sarah Lee',
     role: 'Web Developer',
     skills: ['Vue.js', 'Nuxt', 'CSS', 'Figma'],
@@ -72,7 +73,7 @@ export function TalentCardGrid() {
     const supabase = createClient()
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, role, skills, github_url, avatar_url')
+      .select('id, full_name, role, title, skills, github_url, avatar_url')
       .order('created_at', { ascending: false })
       .limit(20)
 
@@ -124,6 +125,9 @@ export function TalentCardGrid() {
     if (activeCategory === 'AI / ML') return searchString.includes('machine learning') || searchString.includes('ai') || searchString.includes('python')
     if (activeCategory === 'Mobile') return searchString.includes('mobile') || searchString.includes('swift') || searchString.includes('react native')
     if (activeCategory === 'Backend') return searchString.includes('backend') || searchString.includes('node') || searchString.includes('go') || searchString.includes('rust')
+    if (activeCategory === 'Design') return searchString.includes('design') || searchString.includes('ui') || searchString.includes('ux') || searchString.includes('figma') || searchString.includes('photoshop')
+    if (activeCategory === 'Video') return searchString.includes('video') || searchString.includes('edit') || searchString.includes('premiere') || searchString.includes('after effects') || searchString.includes('davinci')
+    if (activeCategory === 'Data') return searchString.includes('data') || searchString.includes('entry') || searchString.includes('excel') || searchString.includes('typing') || searchString.includes('analytics')
     
     return true
   }).slice(0, 6)
@@ -150,20 +154,59 @@ export function TalentCardGrid() {
         </div>
 
         {/* Category Tabs */}
-        <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-10 pb-2 border-b-2 border-[#F5F4F0]">
-          {CATEGORIES.map(category => (
+        <div className="mb-10 flex flex-col gap-6 border-b-2 border-[#F5F4F0] pb-6">
+          <div className="flex items-center gap-4">
             <button
-              key={category}
-              onClick={() => setActiveCategory(category)}
-              className={`px-5 py-2.5 text-sm font-sans font-medium whitespace-nowrap transition-colors ${
-                activeCategory === category 
-                  ? 'bg-[#0D0D0D] text-white' 
-                  : 'bg-[#F5F4F0] text-[#8A8A8A] hover:bg-[#EBEBEB] hover:text-[#0D0D0D]'
+              onClick={() => setActiveCategory('All')}
+              className={`px-5 py-2.5 text-sm font-sans font-medium whitespace-nowrap transition-colors border-2 ${
+                activeCategory === 'All' 
+                  ? 'bg-[#0D0D0D] text-white border-[#0D0D0D]' 
+                  : 'bg-[#F5F4F0] text-[#8A8A8A] border-transparent hover:border-[#8A8A8A] hover:text-[#0D0D0D]'
               }`}
             >
-              {category}
+              Show All Freelancers
             </button>
-          ))}
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3 w-full">
+              <span className="text-xs font-mono text-[#8A8A8A] uppercase tracking-widest shrink-0 w-24">Tech:</span>
+              <div className="flex overflow-x-auto hide-scrollbar gap-2 w-full pb-2">
+                {TECH_CATEGORIES.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`px-4 py-2 text-xs font-sans font-medium whitespace-nowrap transition-colors border-2 ${
+                      activeCategory === category 
+                        ? 'bg-[#0D0D0D] text-white border-[#0D0D0D]' 
+                        : 'bg-[#F5F4F0] text-[#8A8A8A] border-transparent hover:border-[#8A8A8A] hover:text-[#0D0D0D]'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full">
+              <span className="text-xs font-mono text-[#8A8A8A] uppercase tracking-widest shrink-0 w-24">Creative:</span>
+              <div className="flex overflow-x-auto hide-scrollbar gap-2 w-full pb-2">
+                {NON_TECH_CATEGORIES.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`px-4 py-2 text-xs font-sans font-medium whitespace-nowrap transition-colors border-2 ${
+                      activeCategory === category 
+                        ? 'bg-[#0D0D0D] text-white border-[#0D0D0D]' 
+                        : 'bg-[#F5F4F0] text-[#8A8A8A] border-transparent hover:border-[#8A8A8A] hover:text-[#0D0D0D]'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         {newEntry && (
@@ -180,11 +223,12 @@ export function TalentCardGrid() {
             filteredTalents.map((talent) => (
               <TalentCard 
                 key={talent.id} 
+                id={talent.id}
                 name={talent.full_name || 'Anonymous'}
-                role={talent.role || 'Developer'}
+                role={talent.title || talent.role || 'Developer'}
                 skills={talent.skills || []}
                 github={talent.github_url || ''}
-                stars={Math.floor(Math.random() * 1000)}
+                stars={((talent.full_name || 'A').length * 14) % 999}
               />
             ))
           ) : (

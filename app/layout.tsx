@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { DM_Mono, Instrument_Serif } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { AIChatbot } from '@/components/forge/ai-chatbot'
 import './globals.css'
 
 const dmMono = DM_Mono({ weight: ['400', '500'], subsets: ["latin"], variable: '--font-dm-mono' });
@@ -38,6 +39,7 @@ export default function RootLayout({
     <html lang="en" className="bg-background">
       <body className={`${dmMono.variable} ${instrumentSerif.variable} font-sans antialiased`}>
         {children}
+        <AIChatbot />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

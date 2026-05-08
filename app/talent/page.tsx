@@ -15,7 +15,8 @@ type Talent = {
   avatar_url?: string
 }
 
-const CATEGORIES = ['All', 'Web Dev', 'AI / ML', 'Mobile', 'Backend']
+const TECH_CATEGORIES = ['Web Dev', 'AI / ML', 'Mobile', 'Backend', 'CyberSec', 'DevOps']
+const NON_TECH_CATEGORIES = ['Design', 'Video Editing', 'Data Entry', 'Writing', 'Marketing', 'Virtual Assistant', 'Audio / Music']
 
 export default function AllTalentPage() {
   const [talents, setTalents] = useState<Talent[]>([])
@@ -57,8 +58,18 @@ export default function AllTalentPage() {
     
     if (activeCategory === 'Web Dev') return roleAndSkills.includes('web') || roleAndSkills.includes('frontend') || roleAndSkills.includes('react')
     if (activeCategory === 'AI / ML') return roleAndSkills.includes('machine learning') || roleAndSkills.includes('ai') || roleAndSkills.includes('python')
-    if (activeCategory === 'Mobile') return roleAndSkills.includes('mobile') || roleAndSkills.includes('swift') || roleAndSkills.includes('react native')
+    if (activeCategory === 'Mobile') return roleAndSkills.includes('mobile') || roleAndSkills.includes('swift') || roleAndSkills.includes('react native') || roleAndSkills.includes('flutter')
     if (activeCategory === 'Backend') return roleAndSkills.includes('backend') || roleAndSkills.includes('node') || roleAndSkills.includes('go') || roleAndSkills.includes('rust')
+    if (activeCategory === 'CyberSec') return roleAndSkills.includes('security') || roleAndSkills.includes('cyber') || roleAndSkills.includes('penetration')
+    if (activeCategory === 'DevOps') return roleAndSkills.includes('devops') || roleAndSkills.includes('aws') || roleAndSkills.includes('docker') || roleAndSkills.includes('kubernetes')
+
+    if (activeCategory === 'Design') return roleAndSkills.includes('design') || roleAndSkills.includes('ui') || roleAndSkills.includes('ux') || roleAndSkills.includes('figma') || roleAndSkills.includes('photoshop')
+    if (activeCategory === 'Video Editing') return roleAndSkills.includes('video') || roleAndSkills.includes('edit') || roleAndSkills.includes('premiere') || roleAndSkills.includes('after effects') || roleAndSkills.includes('davinci')
+    if (activeCategory === 'Data Entry') return roleAndSkills.includes('data') || roleAndSkills.includes('entry') || roleAndSkills.includes('excel') || roleAndSkills.includes('typing') || roleAndSkills.includes('analytics')
+    if (activeCategory === 'Writing') return roleAndSkills.includes('writ') || roleAndSkills.includes('copy') || roleAndSkills.includes('blog') || roleAndSkills.includes('content')
+    if (activeCategory === 'Marketing') return roleAndSkills.includes('market') || roleAndSkills.includes('seo') || roleAndSkills.includes('social') || roleAndSkills.includes('growth')
+    if (activeCategory === 'Virtual Assistant') return roleAndSkills.includes('virtual') || roleAndSkills.includes('assistant') || roleAndSkills.includes('admin')
+    if (activeCategory === 'Audio / Music') return roleAndSkills.includes('audio') || roleAndSkills.includes('music') || roleAndSkills.includes('sound') || roleAndSkills.includes('mix')
     
     return true
   })
@@ -89,32 +100,69 @@ export default function AllTalentPage() {
         </div>
 
         {/* Filters & Search */}
-        <div className="mb-10 flex flex-col md:flex-row items-center justify-between gap-6 border-b-2 border-[#8A8A8A] pb-6">
-          <div className="flex overflow-x-auto w-full md:w-auto hide-scrollbar gap-2">
-            {CATEGORIES.map(category => (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
-                className={`px-5 py-2.5 text-sm font-sans font-medium whitespace-nowrap transition-colors border-2 ${
-                  activeCategory === category 
-                    ? 'bg-[#0D0D0D] text-white border-[#0D0D0D]' 
-                    : 'bg-white text-[#8A8A8A] border-transparent hover:border-[#8A8A8A] hover:text-[#0D0D0D]'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+        <div className="mb-10 flex flex-col items-start gap-6 border-b-2 border-[#8A8A8A] pb-6">
+          <div className="w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="relative w-full md:w-80 shrink-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8A8A]" size={16} />
+              <input 
+                type="text"
+                placeholder="Search by name, role, or skill..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border-2 border-[#8A8A8A] bg-white font-sans text-sm focus:outline-none focus:border-[#F5A623] transition-colors"
+              />
+            </div>
+            
+            <button
+              onClick={() => setActiveCategory('All')}
+              className={`px-5 py-2.5 text-sm font-sans font-medium whitespace-nowrap transition-colors border-2 ${
+                activeCategory === 'All' 
+                  ? 'bg-[#0D0D0D] text-white border-[#0D0D0D]' 
+                  : 'bg-white text-[#8A8A8A] border-transparent hover:border-[#8A8A8A] hover:text-[#0D0D0D]'
+              }`}
+            >
+              Show All Freelancers
+            </button>
           </div>
 
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8A8A8A]" size={16} />
-            <input 
-              type="text"
-              placeholder="Search by name, role, or skill..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border-2 border-[#8A8A8A] bg-white font-sans text-sm focus:outline-none focus:border-[#F5A623] transition-colors"
-            />
+          <div className="w-full flex flex-col gap-4">
+            <div className="flex items-center gap-3 w-full">
+              <span className="text-xs font-mono text-[#8A8A8A] uppercase tracking-widest shrink-0 w-24">Tech:</span>
+              <div className="flex overflow-x-auto hide-scrollbar gap-2 w-full pb-2">
+                {TECH_CATEGORIES.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`px-4 py-2 text-xs font-sans font-medium whitespace-nowrap transition-colors border-2 ${
+                      activeCategory === category 
+                        ? 'bg-[#0D0D0D] text-white border-[#0D0D0D]' 
+                        : 'bg-white text-[#8A8A8A] border-transparent hover:border-[#8A8A8A] hover:text-[#0D0D0D]'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 w-full">
+              <span className="text-xs font-mono text-[#8A8A8A] uppercase tracking-widest shrink-0 w-24">Creative:</span>
+              <div className="flex overflow-x-auto hide-scrollbar gap-2 w-full pb-2">
+                {NON_TECH_CATEGORIES.map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setActiveCategory(category)}
+                    className={`px-4 py-2 text-xs font-sans font-medium whitespace-nowrap transition-colors border-2 ${
+                      activeCategory === category 
+                        ? 'bg-[#0D0D0D] text-white border-[#0D0D0D]' 
+                        : 'bg-white text-[#8A8A8A] border-transparent hover:border-[#8A8A8A] hover:text-[#0D0D0D]'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -133,11 +181,12 @@ export default function AllTalentPage() {
                 filteredTalents.map((talent) => (
                   <TalentCard 
                     key={talent.id} 
+                    id={talent.id}
                     name={talent.full_name || 'Anonymous'}
                     role={talent.role || 'Developer'}
                     skills={talent.skills || []}
                     github={talent.github_url || ''}
-                    stars={Math.floor(Math.random() * 1000)} // Random stars for demo
+                    stars={((talent.full_name || 'A').length * 14) % 999}
                   />
                 ))
               ) : (

@@ -38,6 +38,8 @@ export default function PostProjectPage() {
   const [milestones, setMilestones] = useState<Milestone[]>([])
   const [editTitle, setEditTitle] = useState('')
   const [editBudget, setEditBudget] = useState('')
+  const [editTimeline, setEditTimeline] = useState('')
+  const [editTechStack, setEditTechStack] = useState('')
   const [error, setError] = useState('')
   const [posting, setPosting] = useState(false)
 
@@ -52,6 +54,8 @@ export default function PostProjectPage() {
       setEditTitle(data.title)
       const budgetNum = data.budget_range?.match(/[\d,]+/)?.[0]?.replace(/,/g, '') || '1000'
       setEditBudget(budgetNum)
+      setEditTimeline(data.timeline || '')
+      setEditTechStack((data.tech_stack || []).join(', '))
       setPhase('review')
     } catch {
       setError('AI scoping failed. Please try again.')
@@ -85,6 +89,9 @@ export default function PostProjectPage() {
         title: editTitle || scoped.title,
         description,
         budget: parseFloat(editBudget) || null,
+        timeline: editTimeline || scoped.timeline,
+        tech_stack: editTechStack.split(',').map(s => s.trim()).filter(Boolean),
+        skills_required: editTechStack.split(',').map(s => s.trim()).filter(Boolean),
         milestones,
         status: 'open',
       })
@@ -220,17 +227,27 @@ export default function PostProjectPage() {
               </div>
               <div className="px-5 py-4 sm:border-r-2 border-b-2 sm:border-b-0 border-[#8A8A8A]">
                 <div className="text-xs font-sans text-[#8A8A8A] tracking-widest uppercase mb-1">Timeline</div>
-                <div className="text-sm font-sans font-medium text-[#0D0D0D]">{scoped.timeline}</div>
+                <input
+                  type="text"
+                  value={editTimeline}
+                  onChange={(e) => setEditTimeline(e.target.value)}
+                  className="text-sm font-sans font-medium text-[#0D0D0D] bg-transparent focus:outline-none w-full border-b border-[#8A8A8A] focus:border-[#F5A623] transition-colors"
+                />
               </div>
               <div className="px-5 py-4">
-                <div className="text-xs font-sans text-[#8A8A8A] tracking-widest uppercase mb-1">Stack</div>
-                <div className="text-sm font-sans font-medium text-[#0D0D0D]">{scoped.tech_stack.slice(0, 3).join(', ')}</div>
+                <div className="text-xs font-sans text-[#8A8A8A] tracking-widest uppercase mb-1">Stack (CSV)</div>
+                <input
+                  type="text"
+                  value={editTechStack}
+                  onChange={(e) => setEditTechStack(e.target.value)}
+                  className="text-sm font-sans font-medium text-[#0D0D0D] bg-transparent focus:outline-none w-full border-b border-[#8A8A8A] focus:border-[#F5A623] transition-colors"
+                />
               </div>
             </div>
 
             {/* Tech stack tags */}
             <div className="flex flex-wrap gap-2 mb-8">
-              {scoped.tech_stack.map(tech => (
+              {editTechStack.split(',').map(tech => tech.trim()).filter(Boolean).map(tech => (
                 <span key={tech} className="text-xs font-sans bg-[#F5F4F0] px-3 py-1.5 border border-[#8A8A8A]">{tech}</span>
               ))}
             </div>

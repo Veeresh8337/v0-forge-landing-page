@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   const [userRes, reposRes] = await Promise.all([
     fetch(`https://api.github.com/users/${username}`, { headers }),
-    fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=8&type=owner`, { headers }),
+    fetch(`https://api.github.com/users/${username}/repos?sort=stars&per_page=100&type=owner`, { headers }),
   ])
 
   if (!userRes.ok) {
@@ -45,7 +45,6 @@ export async function GET(req: NextRequest) {
 
   const top_repos = repos
     .filter((r: { fork: boolean }) => !r.fork)
-    .slice(0, 4)
     .map((r: { name: string; description: string; stargazers_count: number; language: string; html_url: string }) => ({
       name: r.name,
       description: r.description || '',
